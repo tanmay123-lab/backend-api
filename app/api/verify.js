@@ -1,44 +1,53 @@
-import { supabase } from '../../lib/supabase';
+import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
-export default async function handler(req, res) {
-  const { id } = req.query;
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
 
   if (!id) {
-    return res.status(400).json({
-      valid: false,
-      error: 'Certificate ID is required',
-    });
+    return NextResponse.json(
+      { valid: false, error: "Certificate ID is required" },
+      { status: 400 }
+    );
   }
 
-  const normalizedId = String(id).trim().toUpperCase();
+  const normalizedId = id.trim().toUpperCase();
 
   const { data, error } = await supabase
-    .from('certificates')   // MUST be lowercase
-    .select('*')
-    .eq('certificate_id', normalizedId);
+    .from("certificates")
+    .select(
+      `
+      certificate_id,
+      issuer,
+      status,
+      verification_id,
+      verification_source,
+      verified_at
+      `
+    )
+    .eq("certificate_id", normalizedId)
+    .single();
 
-  console.log('Supabase data:', data);
-  console.log('Supabase error:', error);
-
-  if (error || !data || data.length === 0) {
-    return res.status(404).json({
-      certificateId: normalizedId,
-      valid: false,
-      message: 'Certificate not found',
-    });
+  if (error || !data) {
+    return NextResponse.json(
+      {
+        certificateId: normalizedId,
+        valid: false,
+        message: "Certificate not found",
+      },
+      { status: 404 }
+    );
   }
 
-  const record = data[0];
-
-  return res.status(200).json({
-    certificateId: record.certificate_id,
-    valid: record.status === 'verified',
-    issuer: record.issuer,
-    verificationId: record.verification_id,
-    verificationSource: record.verification_source,
-    verifiedAt: record.verified_at,
+  return NextResponse.json({
+    certificateId: data.certificate_id,
+    valid: data.status === "verified",
+    issuer: data.issuer,
+    verificationId: data.verification_id,
+    verificationSource: data.verification_source,
+    verifiedAt: data.verified_at,
   });
 }
-
 
 
