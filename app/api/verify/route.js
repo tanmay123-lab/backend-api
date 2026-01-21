@@ -16,16 +16,14 @@ export async function GET(request) {
 
   const { data, error } = await supabase
     .from("certificates")
-    .select(
-      `
+    .select(`
       certificate_id,
       issuer,
       status,
       verification_id,
       verification_source,
       verified_at
-      `
-    )
+    `)
     .eq("certificate_id", normalizedId)
     .single();
 
@@ -49,5 +47,3 @@ export async function GET(request) {
     verifiedAt: data.verified_at,
   });
 }
-
-
